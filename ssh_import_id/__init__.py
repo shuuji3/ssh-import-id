@@ -201,6 +201,8 @@ def fetch_keys(proto, username, useragent):
 		return fetch_keys_lp(username, useragent)
 	elif proto == "gh":
 		return fetch_keys_gh(username, useragent)
+	elif proto == "gl":
+		return fetch_keys_gl(username, useragent)
 	else:
 		die("ssh-import-id protocol handler %s: not found or cannot execute" % (proto_cmd_path))
 
@@ -308,6 +310,23 @@ def fetch_keys_gh(ghid, useragent):
 			os._exit(1)
 		for keyobj in data:
 			keys += "%s %s@github/%s\n" % (keyobj['key'], ghid, keyobj['id'])
+	except (Exception,):
+		e = sys.exc_info()[1]
+		sys.stderr.write("ERROR: %s\n" % (str(e)))
+		os._exit(1)
+	return keys
+
+
+def fetch_keys_gl(glid, useragent):
+	keys = ""
+	try:
+		url = "https://gitlab.com/%s.keys" % (quote_plus(glid))
+		headers = {'User-Agent': user_agent()}
+		resp = requests.get(url, headers=headers, verify=True)
+		keys = resp.text
+		if resp.status_code == 404:
+			print('Username "%s" not found at GitLab API' % glid)
+			os._exit(1)
 	except (Exception,):
 		e = sys.exc_info()[1]
 		sys.stderr.write("ERROR: %s\n" % (str(e)))
